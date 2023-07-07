@@ -1,10 +1,6 @@
-# Start from the latest golang base image
-FROM golang:latest
+# Build stage
+FROM golang:1.20 AS builder
 
-# Add Maintainer Info
-LABEL maintainer="Your Name <your.email@example.com>"
-
-# Set the Current Working Directory inside the container
 WORKDIR /app
 
 # Copy go mod and sum files
@@ -19,7 +15,20 @@ COPY . .
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
-# Expose port 8080 to the outside world
+# New stage. Only copying the binary from /app/main from the previous stage
+FROM alpine:latest
+
+# Add Maintainer Info
+LABEL org.opencontainers.image.authors="Ariesly.Mao@hotmail.com"
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/main .
+
+# Expose port 8080 to the outside
 EXPOSE 8080
 
 # Command to run the executable
